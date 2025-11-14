@@ -1,4 +1,4 @@
-import gfootball.env as football_env
+from ..football.gfootball.env import football_env
 
 env = football_env.create_environment(
     env_name="11_vs_11_stochastic", 
