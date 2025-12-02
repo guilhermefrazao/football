@@ -8,6 +8,7 @@ services:
     image: gfootball:latest
     container_name: gfootball-dev
     user: "${UID:-1000}:${GID:-1000}"
+    command: sleep infinity  # Mantém o container rodando indefinidamente
     # Add any volumes, ports, environment variables, etc. as needed
     volumes:
       - ./:/RL  # Map current folder to /dev inside the container for live development
