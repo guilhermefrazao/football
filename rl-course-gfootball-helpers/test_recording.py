@@ -1,7 +1,7 @@
-from ..football.gfootball.env import football_env
+import gfootball.env as football_env
 
 env = football_env.create_environment(
-    env_name="11_vs_11_stochastic", 
+    env_name="5_vs_5", 
     stacked=True, 
     representation='simple115v2',
     logdir='videos', 

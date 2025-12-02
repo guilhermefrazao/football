@@ -24,3 +24,21 @@ services:
             - driver: nvidia
               count: all
               capabilities: [gpu]
+
+    develop:
+      watch:
+        - action: sync
+          path: ./football
+          target: /gfootball/gfootball
+          ignore:
+            - __pycache__/
+            - "*.pyc"
+
+        - action: rebuild
+          path: ./setup.py
+          
+        - action: rebuild
+          path: ./requirements.txt
+          
+        - action: rebuild
+          path: ./Dockerfile
