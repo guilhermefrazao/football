@@ -3,9 +3,9 @@ pygame>=1.9.6
 opencv-python
 psutil
 numpy
+gym<=0.21.0
 absl-py
-numpy<2.0
-opencv-python
-gym==0.21.0
+wheel
 stable-baselines3==1.8.0
 shimmy>=0.2.1
+numpy<2.0
