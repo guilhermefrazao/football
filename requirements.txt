@@ -9,3 +9,5 @@ wheel
 stable-baselines3==1.8.0
 shimmy>=0.2.1
 numpy<2.0
+wandb
+stable-baselines3==1.8.0

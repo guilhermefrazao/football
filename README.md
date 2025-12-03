@@ -7,13 +7,28 @@ Para rodar localmente antes de utilizar o docker é necessário baixar o require
 Não recomendo rodar localmente utilizando Windows
 Não é recomendando utilizar pacotes de ambiente virtuais como "uv" para rodar localmente
 
+Passo a passo para rodar o repositório (localmente)
 
 ```bash
 pip install -r requirements.txt
 ```
 
+```bash
+cd football
+``` 
 
-Passo a passo para rodar o repositório
+```bash
+./run_agents.sh
+``` 
+
+ou 
+
+```bash
+python3 train_ppo.py
+``` 
+
+
+Passo a passo para rodar o repositório (utilizando docker)
 
 
 ```bash

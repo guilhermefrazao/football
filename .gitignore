@@ -1,1 +1,24 @@
+# Logs e outputs
 rl-course-gfootball-helpers/videos
+football/wandb/
+football/models/
+football/logs_gfootball/
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+
+*.zip
+*.pth
+*.pt
+*.ckpt
+*.h5
+checkpoints/
+
+# Logs
+*.log
+logs/
+*.tfevents.*
