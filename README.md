@@ -13,8 +13,30 @@ pip install -r requirements.txt
 ```
 
 
-Rodando com o docker
+Passo a passo para rodar o repositório
+
+
+```bash
+cd rl-course-gfootball-helpers
+``` 
+
+buildar e subir o docker 
 
 ```bash
 docker compose up --build
 ```
+
+
+Entrar dentro do container para executar o código
+
+```bash
+docker compose exec gfootball bash
+```
+
+Rodar o código python desejado dentro do container
+
+```bash
+ls
+python3 train_ppo.py
+```
+
