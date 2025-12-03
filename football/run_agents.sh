@@ -2,9 +2,9 @@
 
 # --- 1. Configurações Compartilhadas ---
 # Defina aqui o nome do cenário e do modelo uma única vez
-export SCENARIO_NAME="academy_empty_goal_close"
-export MODEL_NAME="meu_agente_v1"
-export TOTAL_STEPS=100000
+export SCENARIO_NAME="5_vs_5"
+export MODEL_NAME="ppo_agent"
+export TOTAL_STEPS=1000000
 
 # --- 2. Fix de Dependência (MPI/HPCX) ---
 # Garante que não dê erro de "undefined symbol"

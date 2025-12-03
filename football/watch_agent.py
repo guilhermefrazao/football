@@ -5,7 +5,7 @@ import wandb
 from datetime import datetime
 
 # --- LENDO VARIÁVEIS DO SHELL SCRIPT ---
-scenario_name = os.getenv("SCENARIO_NAME", "academy_empty_goal_close")
+scenario_name = os.getenv("SCENARIO_NAME", "5_vs_5")
 model_path = os.getenv("MODEL_NAME", "meu_agente_gfootball")
 
 print(f"--> Carregando agente: {model_path} no cenário {scenario_name}")
@@ -13,6 +13,7 @@ print(f"--> Carregando agente: {model_path} no cenário {scenario_name}")
 
 wandb.init(
     project="RL_Fut_PPO", 
+    entity="guilhermefrazao-ufg", 
     name=f"evaluation_{scenario_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
     config={
         "scenario": scenario_name,

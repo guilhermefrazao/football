@@ -9,7 +9,7 @@ from datetime import datetime
 
 # --- LENDO VARIÁVEIS DO SHELL SCRIPT ---
 # O segundo parâmetro é um valor padrão caso não venha do shell
-scenario_name = os.getenv("SCENARIO_NAME", "academy_empty_goal_close")
+scenario_name = os.getenv("SCENARIO_NAME", "5_vs_5")
 model_path = os.getenv("MODEL_NAME", "meu_agente_gfootball")
 total_timesteps = int(os.getenv("TOTAL_STEPS", "100000"))
 
@@ -17,7 +17,8 @@ print(f"--> Configuração Python: Cenário={scenario_name} | Modelo={model_path
 
 run = wandb.init(
     project="RL_Fut_PPO",
-    name=f"train-{scenario_name}-{datetime.now().strftime('%Y%m%d-%H%M%S')}",
+    entity="guilhermefrazao-ufg", 
+    name=f"train_{scenario_name}-{datetime.now().strftime('%d - %H:%M')}",
     sync_tensorboard=True,  
     monitor_gym=True,    
     save_code=True,  
@@ -74,10 +75,19 @@ model.save(model_path)
 print(f"Modelo salvo em {model_path}.zip")
 
 final_model_path = f"./models/{run.id}/final_model"
+os.makedirs(os.path.dirname(final_model_path), exist_ok=True)
 
-artifact = wandb.Artifact("final-model", type="model")
-artifact.add_file(final_model_path + ".zip")
-wandb.log_artifact(artifact)
+model.save(final_model_path)
+print(f"Modelo final salvo em {final_model_path}.zip")
+
+
+if os.path.exists(final_model_path + ".zip"):
+    artifact = wandb.Artifact("final-model", type="model")
+    artifact.add_file(final_model_path + ".zip")
+    wandb.log_artifact(artifact)
+    print("Modelo adicionado ao wandb artifact")
+else:
+    print(f"⚠️  Aviso: Arquivo {final_model_path}.zip não encontrado. Pulando upload para wandb.")
 
 
 env.close()
