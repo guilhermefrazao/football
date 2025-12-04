@@ -14,10 +14,11 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=16G
 
-export PATH=/home/user_guilhermefer/python39/bin:$PATH
-source /home/user_guilhermefer/football/venv/bin/activate
+/home/user_guilhermefer/python39/bin/python3 -m venv venv
+source venv/bin/activate
+python --version
 
-pip install --upgrade pip
+pip install --upgrade pip setuptools wheel
 
 pip install -r requirements.txt
 
