@@ -1,5 +1,29 @@
 #!/bin/bash
 
+#SBATCH --job-name=ppo_agent_football
+
+#SBATCH --output=saida_%j.log
+
+#SBATCH --error=erro_%j.log
+
+#SBATCH --time=03:00:00
+
+#SBATCH --partition=h100n3
+
+#SBATCH --gres=gpu:1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=16G
+
+if [ ! -d "venv" ]; then
+    python3 -m venv venv
+fi
+
+source ~/venv/bin/activate
+
+pip install --upgrade pip
+
+pip install -r requirements.txt
+
 export LD_LIBRARY_PATH=/opt/hpcx/ompi/lib:/opt/hpcx/ucx/lib:$LD_LIBRARY_PATH
 
 set -e
