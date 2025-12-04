@@ -2,11 +2,31 @@ import gfootball.env as football_env
 from stable_baselines3 import PPO
 import os
 import wandb
+import time
+import sys
+import argparse
+
+
 from datetime import datetime
 
-# --- LENDO VARIÁVEIS DO SHELL SCRIPT ---
-scenario_name = os.getenv("SCENARIO_NAME", "5_vs_5")
-model_path = os.getenv("MODEL_NAME", "meu_agente_gfootball")
+
+
+parser = argparse.ArgumentParser(description='Visualiza um agente treinado.')
+
+parser.add_argument('--model_name', type=str, required=True, help='Nome do modelo a ser carregado')
+parser.add_argument('--scenario', type=str, default="5_vs_5")
+
+args = parser.parse_args()
+
+
+model_path = args.model_name
+
+scenario_name = args.scenario
+
+if not os.path.exists(model_path):
+    print(f"❌ Modelo não encontrado: {model_path}")
+    sys.exit(1)
+
 
 print(f"--> Carregando agente: {model_path} no cenário {scenario_name}")
 
@@ -26,9 +46,9 @@ wandb.init(
 env = football_env.create_environment(
     env_name=scenario_name, # Agora está sincronizado com o treino!
     stacked=True, 
-    representation='simple115v2',
-    render=True, 
-    write_video=True
+    representation='pixels',
+    render=False, 
+    write_video=False
 )
 
 # Carrega usando a variável
@@ -40,11 +60,13 @@ done = False
 episode = 0
 step = 0
 ep_reward = 0
+max_episodes = 20
 
 print("Rodando o agente treinado...")
 while True:
     action, _states = model.predict(obs)
     obs, reward, done, info = env.step(action)
+    time.sleep(0.03)
 
     ep_reward += reward
     step += 1
@@ -75,5 +97,7 @@ while True:
         wandb.save("*.mp4")
         print("Video salvo no WandB")
 
-
-env.close()
+        if episode >= max_episodes:
+            env.close()
+            break
+            
