@@ -14,6 +14,9 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=16G
 
+export PATH=/home/user_guilhermefer/python39/bin:$PATH
+source /home/user_guilhermefer/football/venv/bin/activate
+
 pip install --upgrade pip
 
 pip install -r requirements.txt
