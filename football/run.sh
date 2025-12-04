@@ -14,14 +14,6 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=16G
 
-/home/user_guilhermefer/python39/bin/python3 -m venv venv
-source venv/bin/activate
-python --version
-
-pip install --upgrade pip setuptools wheel
-
-pip install -r requirements.txt
-
 export LD_LIBRARY_PATH=/opt/hpcx/ompi/lib:/opt/hpcx/ucx/lib:$LD_LIBRARY_PATH
 
 set -e
