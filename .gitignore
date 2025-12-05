@@ -1,7 +1,6 @@
 # Logs e outputs
 rl-course-gfootball-helpers/videos
 football/wandb/
-football/models/
 football/logs_gfootball/
 
 # Virtual environments
