@@ -13,10 +13,10 @@ services:
     image: gfootball:latest
     container_name: gfootball-dev
     user: "${UID:-1000}:${GID:-1000}"
-    command: sleep infinity  # Mantém o container rodando indefinidamente
     # Add any volumes, ports, environment variables, etc. as needed
+    command: sleep infinity  # Mantém o container rodando indefinidamente
     volumes:
-      - ./:/RL  # Map current folder to /dev inside the container for live development
+      - ./models:/gfootball/models
     # ports:
     #   - "6006:6006"  # Example: TensorBoard port
     # environment:

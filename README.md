@@ -45,11 +45,11 @@ GID=1000
 buildar e subir o docker 
 
 ```bash
-docker compose up -d --build
+docker compose up --build
 ```
 
 
-Entrar dentro do container para executar o código
+Pode também Entrar dentro do container para executar o código
 
 ```bash
 docker compose exec gfootball bash
@@ -59,6 +59,19 @@ Rodar o código python desejado dentro do container
 
 ```bash
 ls
-python3 train_ppo.py
+python3 train_ppo.py --stage 1
 ```
+
+Para verificar a capacidade do modelo treinado deve rodar watch_agent.py
+
+```bash
+python3 watch_agent.py --model_name /models/exp/1_model.zip --scenario academy_empty_goal_close
+```
+
+
+
+O código implementado utilizou curriculum learning para aumentar a dificuldade dos bots gradualmente dividido em stages, o melhor modelo deve ser treinado em sequência pelo run.sh, além disso foi implementado "Early Stopping e Learning Rate Decay", assim como métricas explicitas para melhorar o entendimento do treinamento.
+
+
+
 

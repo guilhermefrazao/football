@@ -1,19 +1,3 @@
-#!/bin/bash
-
-#SBATCH --job-name=ppo_agent_football
-
-#SBATCH --output=saida_%j.log
-
-#SBATCH --error=erro_%j.log
-
-#SBATCH --time=03:00:00
-
-#SBATCH --partition=h100n3
-
-#SBATCH --gres=gpu:1
-#SBATCH --cpus-per-task=4
-#SBATCH --mem=16G
-
 export LD_LIBRARY_PATH=/opt/hpcx/ompi/lib:/opt/hpcx/ucx/lib:$LD_LIBRARY_PATH
 
 set -e
@@ -38,8 +22,8 @@ do
 
     SCENARIOS=("academy_empty_goal_close" \
            "academy_empty_goal" \
-           "academy_run_to_score" \
-           "academy_3_vs_1" \
+           "academy_run_pass_and_shoot_with_keeper" \
+           "5_vs_5" \
            "5_vs_5")
 
     SCENARIO=${SCENARIOS[$((STAGE-1))]}

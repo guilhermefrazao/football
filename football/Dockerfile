@@ -34,6 +34,7 @@ RUN groupadd -g $GID appuser && \
     useradd -m -u $UID -g appuser appuser
 
 USER appuser
+
 ENV HOME=/home/appuser
 
-CMD ["python3", "train_ppo.py", "--stage", "3"]
+#CMD ["python3", "train_ppo.py", "--stage", "1"]
