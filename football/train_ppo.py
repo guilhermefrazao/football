@@ -117,7 +117,7 @@ def setup_wandb(scenario_name, STAGE, total_timesteps):
 
 
     wandb_callback = WandbCallback(
-        model_save_path=f"./models/{run.id}",
+        model_save_path=f"/gfootball/models/{run.id}",
         model_save_freq=10000,
         verbose=2
     )
