@@ -38,8 +38,8 @@ cd rl-course-gfootball-helpers
 É necessário criar um arquivo .env dentro dessa pasta, que vai conter 
 
 WANDB_API_KEY=chave-wandb
-UID=1000
-GID=1000
+UID=1003
+GID=1004
 
 
 buildar e subir o docker 
@@ -67,7 +67,6 @@ Para verificar a capacidade do modelo treinado deve rodar watch_agent.py
 ```bash
 python3 watch_agent.py --model_name /models/exp/1_model.zip --scenario academy_empty_goal_close
 ```
-
 
 
 O código implementado utilizou curriculum learning para aumentar a dificuldade dos bots gradualmente dividido em stages, o melhor modelo deve ser treinado em sequência pelo run.sh, além disso foi implementado "Early Stopping e Learning Rate Decay", assim como métricas explicitas para melhorar o entendimento do treinamento.

@@ -15,8 +15,7 @@ services:
     user: "${UID:-1000}:${GID:-1000}"
     # Add any volumes, ports, environment variables, etc. as needed
     command: sleep infinity  # Mantém o container rodando indefinidamente
-    volumes:
-      - ./models:/gfootball/models
+
     # ports:
     #   - "6006:6006"  # Example: TensorBoard port
     # environment:

@@ -98,7 +98,7 @@ def setup_wandb(scenario_name, STAGE, total_timesteps):
     run = wandb.init(
     project="RL_Fut_PPO",
     entity="guilhermefrazao-ufg", 
-    name=f"train_{scenario_name}_{STAGE}-{datetime.now().strftime('%d - %H:%M')}",
+    name=f"train_{STAGE}_{scenario_name}_-{datetime.now().strftime('%d - %H:%M')}",
     sync_tensorboard=True,   
     save_code=True,  
     config={
