@@ -35,24 +35,18 @@ STAGES = {
         "adversary": "default"
     },
     3: {
-        "scenario": "academy_run_to_score",
-        "timesteps": 3_000_000,
-        "reward": "medium",
-        "adversary": "default"
-    },
-    4: {
-        "scenario": ["academy_3_vs_1", "academy_5_vs_3"],
+        "scenario": "academy_run_pass_and_shoot_with_keeper",
         "timesteps": 5_000_000,
         "reward": "medium",
         "adversary": "default"
     },
-    5: {
+    4: {
         "scenario": "5_vs_5",
         "timesteps": 10_000_000,
-        "reward": "advanced",
+        "reward": "medium",
         "adversary": "custom"
     },
-    6: {
+    5: {
         "scenario": "5_vs_5",
         "timesteps": 10_000_000,
         "reward": "advanced",
@@ -151,11 +145,11 @@ def setup_env(config, scenario_name):
     if config["reward"] == "none":
         pass
     elif config["reward"] == "light":
-        env = FootballShapedReward(env, step_penalty=1e-4)
+        env = FootballShapedReward(env, step_penalty=1e-4, reward_type=config["reward"])
     elif config["reward"] == "medium":
-        env = FootballShapedReward(env, step_penalty=1e-4, goal_bonus=0.5)
+        env = FootballShapedReward(env, step_penalty=1e-4, goal_bonus=0.5, progress_reward=0.05, reward_type=config["reward"])
     elif config["reward"] == "advanced":
-        env = FootballShapedReward(env, step_penalty=5e-5, goal_bonus=1.0)
+        env = FootballShapedReward(env, step_penalty=5e-5, goal_bonus=1.0, progress_reward=0.05, reward_type=config["reward"])
 
     if config["adversary"] == "custom":
         agent_module.Player = CustomPlayer
