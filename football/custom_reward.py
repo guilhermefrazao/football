@@ -1,5 +1,6 @@
 import gfootball.env as football_env
 import os
+import numpy as np
 import gym
 
 
@@ -10,11 +11,38 @@ class FootballShapedReward(gym.Wrapper):
         self.step_penalty = step_penalty
         self.goal_bonus = goal_bonus
 
+    def check_ball_status(self, obs):
+        ball_x = obs[88]
+        ball_y = obs[89]
+        ball_z = obs[90]
+        
+        out_lateral = abs(ball_y) > 0.42
+        
+        out_fundo = abs(ball_x) > 1.01 and abs(ball_y) > 0.05 
+
+        is_physically_out = out_lateral or out_fundo
+
+        ball_owned_team = obs[94:97]
+
+        owner_index = np.argmax(ball_owned_team)
+        
+        is_opponent_ball = (owner_index == 2)
+
+        return is_physically_out, is_opponent_ball 
+
+
+
     def step(self, action):
         obs, reward, done, info = self.env.step(action)
         shaped_reward = reward - self.step_penalty
 
         if reward > 0:
             shaped_reward += self.goal_bonus
+
+        ball_out, is_opponent_ball = self.check_ball_status(obs)
+
+        if ball_out and not is_opponent_ball:
+            print("Bola saiu, punição aplicada.")
+            shaped_reward -= 0.2
 
         return obs, shaped_reward, done, info
