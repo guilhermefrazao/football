@@ -6,47 +6,42 @@ class EarlyStoppingCallback(BaseCallback):
         self.patience = patience
         self.min_delta = min_delta
         self.best_mean_reward = -float("inf")
-        self.counter = 0
-        self.window = []
-        self.success_window = []
         self.window_size = window_size
+
+        self.success_window = []
+        self.best_rate = 0.0
+        self.counter = 0
 
     def _on_step(self):
         done = self.locals["dones"][0]
+        info = self.locals["infos"][0]
 
         if done:
-            info = self.locals["infos"][0]
-            ep_reward = info["episode"]["r"]
+            
+            truncated = info.get("TimeLimit.truncated", False)
+            score_reward = info.get("score_reward", 0)
 
-            self.window.append(ep_reward)
+            success = 1 if (score_reward > 0 and not truncated) else 0
 
-            if len(self.window) >= 50:
-                truncated = info.get("TimeLimit.truncated", False)
-                score_reward = info.get("score_reward", 0)
+            self.success_window.append(success)
 
-                success = 1 if (score_reward > 0 and not truncated) else 0
+            if len(self.success_window) > self.window_size:
+                self.success_window.pop(0)
 
-                self.success_window.append(success)
+            if len(self.success_window) == self.window_size:
+                success_rate = sum(self.success_window) / self.window_size
 
-                if len(self.success_window) > self.window_size:
-                    self.success_window.pop(0)
+                if success_rate > self.best_rate + self.min_delta:
+                    self.best_rate = success_rate
+                    self.counter = 0
+                else:
+                    self.counter += 1
 
-                if len(self.success_window) == self.window_size:
-                    success_rate = sum(self.success_window) / self.window_size
+                if self.verbose:
+                    print(f"[EarlyStop] SuccessRate={success_rate:.2f} | Best={self.best_rate:.2f} | Count={self.counter}/{self.patience}")
 
-                    self.logger.record("custom/early_stop_success_rate", success_rate)
-
-                    if success_rate > self.best_rate + self.min_delta:
-                        self.best_rate = success_rate
-                        self.counter = 0
-                    else:
-                        self.counter += 1
-
-                    if self.verbose:
-                        print(f"[EarlyStop] SuccessRate={success_rate:.2f} | Best={self.best_rate:.2f} | Count={self.counter}/{self.patience}")
-
-                    if self.counter >= self.patience:
-                        print("⛔ Early stopping acionado por estagnação da taxa de sucesso!")
-                        return False
+                if self.counter >= self.patience:
+                    print("⛔ Early stopping acionado por estagnação da taxa de sucesso!")
+                    return False
 
         return True

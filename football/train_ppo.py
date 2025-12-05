@@ -13,7 +13,6 @@ from datetime import datetime
 import gfootball.env.players.agent as agent_module
 from custom_agent import Player as CustomPlayer
 from custom_reward import FootballShapedReward
-from early_stopping import EarlyStoppingCallback
 
 
 parser = argparse.ArgumentParser(description='Visualiza um agente treinado.')
@@ -143,22 +142,19 @@ def setup_env(config, scenario_name):
 
 
     if config["reward"] == "none":
-        early_stopping = EarlyStoppingCallback(patience=20, min_delta=0.03, window_size=20)
         pass
     elif config["reward"] == "light":
         env = FootballShapedReward(env, step_penalty=1e-4, reward_type=config["reward"])
-        early_stopping = EarlyStoppingCallback(patience=20, min_delta=0.03, window_size=40)
     elif config["reward"] == "medium":
         env = FootballShapedReward(env, step_penalty=1e-4, goal_bonus=0.5, progress_reward=0.05, reward_type=config["reward"])
-        early_stopping = EarlyStoppingCallback(patience=10, min_delta=0.02, window_size=50)
     elif config["reward"] == "advanced":
         env = FootballShapedReward(env, step_penalty=5e-5, goal_bonus=1.0, progress_reward=0.05, reward_type=config["reward"])
-        early_stopping = EarlyStoppingCallback(patience=8, min_delta=0.015, window_size=70)
+
 
     if config["adversary"] == "custom":
         agent_module.Player = CustomPlayer
 
-    return env, early_stopping
+    return env
 
 
 def linear_lr_decay(initial_lr):
@@ -204,7 +200,7 @@ def run_agent():
 
     new_logger, wandb_callback = setup_wandb(scenario_name, STAGE, total_timesteps)
 
-    env, early_stopping = setup_env(config, scenario_name)
+    env = setup_env(config, scenario_name)
 
     prev_stage = STAGE - 1
 
@@ -214,7 +210,7 @@ def run_agent():
 
     model.set_logger(new_logger)
 
-    callback = CallbackList([wandb_callback, FootballMetricsCallback(), early_stopping])
+    callback = CallbackList([wandb_callback, FootballMetricsCallback()])
 
     print(f"Iniciando treinamento no cenário: {scenario_name}...")
 

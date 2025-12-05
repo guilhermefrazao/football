@@ -62,11 +62,6 @@ class FootballShapedReward(gym.Wrapper):
         
         they_scored = passed_left_line and in_goal_area
 
-
-        print("Controlled team goal", we_scored)
-
-        print("Oposite team goal", they_scored)
-
         return we_scored, they_scored
 
 
