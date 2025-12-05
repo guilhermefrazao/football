@@ -1,4 +1,5 @@
-FROM nvcr.io/nvidia/pytorch:22.12-py3
+#FROM nvcr.io/nvidia/pytorch:22.12-py3
+FROM nvidia/cuda:12.1.0-cudnn8-runtime-ubuntu22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get --no-install-recommends install -yq git cmake build-essential \
@@ -25,3 +26,14 @@ RUN python3 -c "from opencv_fixer import AutoFix; AutoFix()"
 WORKDIR '/gfootball'
 
 RUN chmod -R 777 /gfootball
+
+ARG UID=1000
+ARG GID=1000
+
+RUN groupadd -g $GID appuser && \
+    useradd -m -u $UID -g appuser appuser
+
+USER appuser
+ENV HOME=/home/appuser
+
+CMD ["python3", "train_ppo.py", "--stage", "3"]

@@ -5,6 +5,11 @@ services:
     build:
       context: ../football  # Build context is the football folder
       dockerfile: Dockerfile  # Dockerfile path relative to context
+      args:
+        UID: ${UID}
+        GID: ${GID}
+    environment:
+      - WANDB_API_KEY=${WANDB_API_KEY}
     image: gfootball:latest
     container_name: gfootball-dev
     user: "${UID:-1000}:${GID:-1000}"

@@ -28,17 +28,24 @@ python3 train_ppo.py
 ``` 
 
 
-Passo a passo para rodar o repositório (utilizando docker)
+Passo a passo para rodar o repositório (utilizando docker: Recomendado)
 
 
 ```bash
 cd rl-course-gfootball-helpers
 ``` 
 
+É necessário criar um arquivo .env dentro dessa pasta, que vai conter 
+
+WANDB_API_KEY=chave-wandb
+UID=1000
+GID=1000
+
+
 buildar e subir o docker 
 
 ```bash
-docker compose up --build
+docker compose up -d --build
 ```
 
 
