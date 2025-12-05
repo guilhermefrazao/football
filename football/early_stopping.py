@@ -8,6 +8,7 @@ class EarlyStoppingCallback(BaseCallback):
         self.best_mean_reward = -float("inf")
         self.counter = 0
         self.window = []
+        self.success_window = []
         self.window_size = window_size
 
     def _on_step(self):

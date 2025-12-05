@@ -25,7 +25,7 @@ args = parser.parse_args()
 STAGES = {
     1: {
         "scenario": "academy_empty_goal_close",
-        "timesteps": 10,
+        "timesteps": 1_000_000,
         "reward": "none",
         "adversary": "default"
     },
@@ -117,7 +117,7 @@ def setup_wandb(scenario_name, STAGE, total_timesteps):
 
 
     wandb_callback = WandbCallback(
-        model_save_path=f"/gfootball/models/{run.id}",
+        model_save_path=f"models/{run.id}",
         model_save_freq=10000,
         verbose=2
     )
@@ -223,7 +223,7 @@ def run_agent():
         callback=callback
     )
 
-    model_path = f"/gfootball/models/exp{STAGE}_model"
+    model_path = f"models/exp{STAGE}_model"
     os.makedirs(os.path.dirname(model_path), exist_ok=True)
 
     model.save(model_path)
