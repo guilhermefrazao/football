@@ -68,6 +68,10 @@ Para verificar a capacidade do modelo treinado deve rodar watch_agent.py
 python3 watch_agent.py --model_name /models/exp/1_model.zip --scenario academy_empty_goal_close
 ```
 
+É necessário puxar os modelos treinados dentro do container quando finalizar o treino, com 
+
+
+docker cp gfootball-dev:gfootball/models/exp1_model.zip /home/user_guilhermefrazao/football/rl-course-gfootball-helpers
 
 O código implementado utilizou curriculum learning para aumentar a dificuldade dos bots gradualmente dividido em stages, o melhor modelo deve ser treinado em sequência pelo run.sh, além disso foi implementado "Early Stopping e Learning Rate Decay", assim como métricas explicitas para melhorar o entendimento do treinamento.
 
