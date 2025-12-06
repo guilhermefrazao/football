@@ -70,13 +70,16 @@ class FootballShapedReward(gym.Wrapper):
         obs, reward, done, info = self.env.step(action)
         shaped_reward = reward - self.step_penalty
 
-        we_scored, they_scored = self.goal_rewards(obs)
+        if reward > 0:
+            shaped_reward += self.goal_bonus
+
+        """we_scored, they_scored = self.goal_rewards(obs)
 
         if we_scored:
             shaped_reward += self.goal_bonus
 
         if they_scored:
-            shaped_reward -= self.goal_bonus
+            shaped_reward -= self.goal_bonus"""
 
         if self.reward_type == "light":
             ball_out, is_opponent_ball = self.check_ball_status(obs)
@@ -85,7 +88,7 @@ class FootballShapedReward(gym.Wrapper):
                 print("Bola saiu, punição aplicada.")
                 shaped_reward -= 0.2
 
-        elif self.reward_type == "medium":
+        elif self.reward_type == "advanced":
             progress = self.checkpoint_reward(obs)
             
             if progress > 0:

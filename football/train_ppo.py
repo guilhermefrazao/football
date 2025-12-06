@@ -23,32 +23,32 @@ args = parser.parse_args()
 
 STAGES = {
     1: {
-        "scenario": "academy_empty_goal_close",
+        "scenario": "academy_run_to_score_with_keeper",
         "timesteps": 1_000_000,
-        "reward": "none",
+        "reward": "light",
         "adversary": "default"
     },
     2: {
-        "scenario": "academy_empty_goal",
+        "scenario": "academy_pass_and_shoot_with_keeper",
         "timesteps": 2_000_000,
         "reward": "light",
         "adversary": "default"
     },
     3: {
-        "scenario": "academy_run_pass_and_shoot_with_keeper",
-        "timesteps": 5_000_000,
+        "scenario": "academy_3_vs_1_with_keeper",
+        "timesteps": 2_000_000,
         "reward": "medium",
         "adversary": "default"
     },
     4: {
-        "scenario": "5_vs_5",
-        "timesteps": 10_000_000,
-        "reward": "medium",
+        "scenario": "academy_counterattack_hard",
+        "timesteps": 2_000_000,
+        "reward": "advanced",
         "adversary": "custom"
     },
     5: {
         "scenario": "5_vs_5",
-        "timesteps": 10_000_000,
+        "timesteps": 2_000_000,
         "reward": "advanced",
         "adversary": "self_play"
     }
@@ -134,7 +134,7 @@ def setup_env(config, scenario_name):
         env_name=scenario_name, 
         stacked=True, 
         representation='simple115v2',
-        render=False, 
+        render=True, 
         write_goal_dumps=False,
         write_full_episode_dumps=False,
         write_video=False
@@ -165,6 +165,8 @@ def linear_lr_decay(initial_lr):
 
 
 def setup_model(STAGE, load_path, env):
+    # Change to use the model pretrained from another stage
+    # Change hyperparameters to favor exploration.
     if STAGE > 1 and os.path.exists(load_path):
         print(f"🔁 Carregando pesos do estágio anterior: {load_path}")
         model = PPO.load(load_path, env=env, device="cpu")
@@ -181,7 +183,7 @@ def setup_model(STAGE, load_path, env):
             ent_coef=0.01,
             vf_coef=0.5,
             device="cpu",
-        )
+        )    
 
     return model
 
