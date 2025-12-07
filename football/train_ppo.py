@@ -23,7 +23,7 @@ args = parser.parse_args()
 
 STAGES = {
     1: {
-        "scenario": "academy_run_to_score_with_keeper",
+        "scenario": "academy_empty_goal",
         "timesteps": 1_000_000,
         "reward": "light",
         "adversary": "default"
@@ -35,7 +35,7 @@ STAGES = {
         "adversary": "default"
     },
     3: {
-        "scenario": "academy_3_vs_1_with_keeper",
+        "scenario": "academy_counterattack_easy",
         "timesteps": 2_000_000,
         "reward": "medium",
         "adversary": "default"
@@ -134,7 +134,7 @@ def setup_env(config, scenario_name):
         env_name=scenario_name, 
         stacked=True, 
         representation='simple115v2',
-        render=True, 
+        render=False, 
         write_goal_dumps=False,
         write_full_episode_dumps=False,
         write_video=False
@@ -206,7 +206,7 @@ def run_agent():
 
     prev_stage = STAGE - 1
 
-    load_path = f"./models/exp{prev_stage}_model.zip"
+    load_path = f"./models/exp{prev_stage}_{STAGES[prev_stage]["scenario"]}model.zip"
 
     model = setup_model(STAGE, load_path, env)
 
@@ -221,7 +221,7 @@ def run_agent():
         callback=callback
     )
 
-    model_path = f"models/exp{STAGE}_model"
+    model_path = f"models/exp{STAGE}_{scenario_name}_model"
     os.makedirs(os.path.dirname(model_path), exist_ok=True)
 
     model.save(model_path)
