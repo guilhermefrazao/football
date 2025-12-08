@@ -277,9 +277,7 @@ def run_agent():
 
     prev_stage = STAGE - 1
 
-    #load_path = f"./models/exp_{prev_stage}_{STAGES[prev_stage]['scenario']}_model.zip" if STAGE > 1 else None
-
-    load_path = "./models/exp_2_academy_pass_and_shoot_with_keeper_model.zip"
+    load_path = f"./models/exp_{prev_stage}_{STAGES[prev_stage]['scenario']}_model.zip" if STAGE > 1 else None
 
     model = setup_model(STAGE, load_path, env)
 
