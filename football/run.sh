@@ -23,7 +23,6 @@ do
     SCENARIOS=("academy_run_to_score_with_keeper" \
            "academy_pass_and_shoot_with_keeper" \
            "academy_counterattack_easy" \
-           "academy_counterattack_hard" \
            "5_vs_5" \
            "5_vs_5")
 

@@ -48,20 +48,13 @@ STAGES = {
         "initial_diff" : 0.1
     },
     4: {
-        "scenario": "academy_counterattack_hard",
-        "timesteps": 1_000_000,
-        "reward": "counterattack",
-        "adversary": "custom",
-        "initial_diff" : 0.3
-    },
-    5: {
         "scenario": "5_vs_5",
         "timesteps": 1_000_000,
         "reward": "advanced",
         "adversary": "custom",
         "initial_diff" : 0.4
     },
-    6: {
+    5: {
         "scenario": "5_vs_5",
         "timesteps": 1_000_000,
         "reward": "advanced",
@@ -128,7 +121,7 @@ def setup_wandb(scenario_name, STAGE, total_timesteps):
     run = wandb.init(
     project="RL_Fut_PPO",
     entity="guilhermefrazao-ufg", 
-    name=f"train_{STAGE}_{scenario_name}_-{datetime.now().strftime('%d - %H:%M')}_3050",
+    name=f"train_{STAGE}_{scenario_name}_-{datetime.now().strftime('%d - %H:%M')}",
     sync_tensorboard=True,   
     save_code=True,  
     config={
@@ -220,8 +213,8 @@ def setup_model(STAGE, load_path, env):
             env, 
             verbose=1, 
             tensorboard_log="./logs_gfootball/",
-            learning_rate=linear_lr_decay(0.00011879),
-            n_steps=512,
+            learning_rate=linear_lr_decay(3e-4),
+            n_steps=2048,
             gamma=0.993,
             gae_lambda=0.95,
             ent_coef=0.00155,
