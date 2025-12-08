@@ -2,6 +2,7 @@ import gfootball.env as football_env
 import os
 from gfootball.env import players
 import gym
+from numpy import diff
 import wandb
 import argparse
 
@@ -26,44 +27,58 @@ args = parser.parse_args()
 
 STAGES = {
     1: {
-        "scenario": "1_vs_1_easy",
+        "scenario": "academy_empty_goal_close",
         "timesteps": 1_000_000,
-        "reward": "light",
-        "adversary": "default"
+        "reward": "checkpoint",
+        "adversary": "default",
+        "initial_diff" : 0.01
     },
     2: {
         "scenario": "academy_pass_and_shoot_with_keeper",
         "timesteps": 1_000_000,
-        "reward": "light",
-        "adversary": "default"
+        "reward": "angle",
+        "adversary": "default",
+        "initial_diff" : 0.05
     },
     3: {
         "scenario": "academy_3_vs_1_with_keeper",
         "timesteps": 1_000_000,
-        "reward": "medium",
-        "adversary": "default"
+        "reward": "angle",
+        "adversary": "default",
+        "initial_diff" : 0.1
     },
     4: {
         "scenario": "academy_counterattack_hard",
         "timesteps": 1_000_000,
-        "reward": "advanced",
-        "adversary": "custom"
+        "reward": "counterattack",
+        "adversary": "custom",
+        "initial_diff" : 0.3
     },
     5: {
         "scenario": "5_vs_5",
         "timesteps": 1_000_000,
         "reward": "advanced",
-        "adversary": "self_play"
+        "adversary": "custom",
+        "initial_diff" : 0.4
+    },
+    6: {
+        "scenario": "5_vs_5",
+        "timesteps": 1_000_000,
+        "reward": "advanced",
+        "adversary": "self_play",
+        "initial_diff" : 0.3
     }
+
 
 }
 
 
 class FootballMetricsCallback(BaseCallback):
-    def __init__(self, window_size=50):
+    def __init__(self, window_size=50, initial_diff=0.1):
         super().__init__()
         self.window_size = window_size
         self.recent_success = []
+        self.current_diff = initial_diff
 
     def _on_step(self):
         reward = self.locals["rewards"][0]
@@ -91,6 +106,19 @@ class FootballMetricsCallback(BaseCallback):
             self.logger.record("custom/success_rate", success_rate)
             self.logger.record("custom/success_last_ep", success)
             self.logger.record("custom/efficiency", efficiency)
+
+            if success_rate >= 0.80 and self.current_diff < 1.0:
+                print(f"\n--- Alterando Dificuldade ---")
+                print(f"Total timesteps: {self.num_timesteps}")
+                print(f"Nova Dificuldade (θ): {self.current_diff:.3f}")
+
+                if self.current_diff >= 1.0:
+                    self.current_diff = 1.0
+
+                else:
+                    self.current_diff = self.current_diff + 0.1
+                
+                self.model.env.set_attr('other_config_options', [{'difficulty': self.current_diff}])
 
         return True
 
@@ -132,12 +160,7 @@ def setup_wandb(scenario_name, STAGE, total_timesteps):
 
 
 def setup_env(config, scenario_name):
-    if config["adversary"] == "custom":
-        players=[
-            'agent:left_players=5',
-            'agent:right_players=5'
-                ]
-
+    if config["adversary"] == "self_play":
         env = football_env.create_environment(
             env_name=scenario_name, 
             stacked=True, 
@@ -146,12 +169,14 @@ def setup_env(config, scenario_name):
             write_goal_dumps=False,
             write_full_episode_dumps=False,
             write_video=False,
-            players=players
+            number_of_left_players_agent_controls=5,
+            number_of_right_players_agent_controls=5
         )
 
         agent_module.Player = CustomPlayer
 
     else:
+        print(f"difficulty = {config['initial_diff']}")
         env = football_env.create_environment(
             env_name=scenario_name, 
             stacked=True, 
@@ -159,18 +184,21 @@ def setup_env(config, scenario_name):
             render=False, 
             write_goal_dumps=False,
             write_full_episode_dumps=False,
-            write_video=False
+            write_video=False,
+            other_config_options={'difficulty': config["initial_diff"]}
         )
 
 
     if config["reward"] == "none":
         pass
-    elif config["reward"] == "light":
-        env = FootballShapedReward(env, step_penalty=1e-4, reward_type=config["reward"])
-    elif config["reward"] == "medium":
-        env = FootballShapedReward(env, step_penalty=1e-4, goal_bonus=0.5, progress_reward=0.05, reward_type=config["reward"])
+    elif config["reward"] == "angle":
+        env = FootballShapedReward(env, step_penalty=1e-4, reward_type=config["reward"], adversary_type=config["adversary"])
+    elif config["reward"] == "checkpoint":
+        env = FootballShapedReward(env, step_penalty=1e-4, goal_bonus=1.0, progress_reward=0.1, reward_type=config["reward"], adversary_type=config["adversary"])
+    elif config["reward"] == "counterattack":
+        env = FootballShapedReward(env, step_penalty=3e-4, goal_bonus=1.0, progress_reward=0.2, reward_type=config["reward"], adversary_type=config["adversary"])
     elif config["reward"] == "advanced":
-        env = FootballShapedReward(env, step_penalty=5e-5, goal_bonus=1.0, progress_reward=0.05, reward_type=config["reward"])
+        env = FootballShapedReward(env, step_penalty=5e-5, goal_bonus=0.5, progress_reward=0.05, reward_type=config["reward"], adversary_type=config["adversary"])
 
     return env
 
@@ -183,8 +211,6 @@ def linear_lr_decay(initial_lr):
 
 
 def setup_model(STAGE, load_path, env):
-    # Change to use the model pretrained from another stage
-    # Change hyperparameters to favor exploration.
     if STAGE > 1 and os.path.exists(load_path):
         print(f"🔁 Carregando pesos do estágio anterior: {load_path}")
         model = PPO.load(load_path, env=env, device="cpu")
@@ -194,11 +220,14 @@ def setup_model(STAGE, load_path, env):
             env, 
             verbose=1, 
             tensorboard_log="./logs_gfootball/",
-            learning_rate=linear_lr_decay(3e-4),
-            n_steps=2048,
-            gamma=0.99,
+            learning_rate=linear_lr_decay(0.00011879),
+            n_steps=512,
+            gamma=0.993,
             gae_lambda=0.95,
-            ent_coef=0.01,
+            ent_coef=0.00155,
+            batch_size=128,
+            clip_range=0.115,
+            max_grad_norm=0.76,
             vf_coef=0.5,
             device="cpu",
         )    
@@ -230,7 +259,7 @@ def run_agent():
 
     model.set_logger(new_logger)
 
-    callback = CallbackList([wandb_callback, FootballMetricsCallback()])
+    callback = CallbackList([wandb_callback, FootballMetricsCallback(initial_diff=config["initial_diff"])])
 
     print(f"Iniciando treinamento no cenário: {scenario_name}...")
 

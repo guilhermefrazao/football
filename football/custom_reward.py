@@ -6,7 +6,7 @@ import gym
 
 # Class to better reward my RL model
 class FootballShapedReward(gym.Wrapper):
-    def __init__(self, env, step_penalty=0.001, goal_bonus=1, progress_reward=0.05, reward_type="light"):
+    def __init__(self, env, step_penalty=0.001, goal_bonus=1, progress_reward=0.05, reward_type="checkpoint", adversary_type="default"):
         super().__init__(env)
         self.step_penalty = step_penalty
         self.goal_bonus = goal_bonus
@@ -14,6 +14,7 @@ class FootballShapedReward(gym.Wrapper):
         self.progress_reward = progress_reward
 
         self.ball_last_place = None
+        self.adversary = adversary_type
 
     def check_ball_status(self, obs):
         ball_x = obs[88]
@@ -49,8 +50,13 @@ class FootballShapedReward(gym.Wrapper):
 
 
     def goal_rewards(self, obs):
-        ball_x = obs[88]
-        ball_y = obs[89]
+        if self.adversary == "self_play":
+            ball_x = obs[0][88]
+            ball_y = obs[0][89]
+
+        else:
+            ball_x = obs[88]
+            ball_y = obs[89]
 
         in_goal_area = abs(ball_y) < 0.044 
 
@@ -58,11 +64,11 @@ class FootballShapedReward(gym.Wrapper):
 
         passed_left_line = ball_x < -1.0
         
-        we_scored = passed_right_line and in_goal_area
-        
         they_scored = passed_left_line and in_goal_area
 
-        return we_scored, they_scored
+        we_scored = passed_right_line and in_goal_area
+
+        return they_scored, we_scored
 
 
 
@@ -70,31 +76,53 @@ class FootballShapedReward(gym.Wrapper):
         obs, reward, done, info = self.env.step(action)
         shaped_reward = reward - self.step_penalty
 
-        if reward > 0:
-            shaped_reward += self.goal_bonus
+        if self.adversary == "self_play":
+            they_scored, we_scored = self.goal_rewards(obs)
 
-        """we_scored, they_scored = self.goal_rewards(obs)
-
-        if we_scored:
-            shaped_reward += self.goal_bonus
-
-        if they_scored:
-            shaped_reward -= self.goal_bonus"""
-
-        if self.reward_type == "light":
-            ball_out, is_opponent_ball = self.check_ball_status(obs)
-
-            if ball_out and not is_opponent_ball:
-                print("Bola saiu, punição aplicada.")
-                shaped_reward -= 0.2
-
-        elif self.reward_type == "advanced":
-            progress = self.checkpoint_reward(obs)
+            if we_scored:
+                shaped_reward[:5] += self.goal_bonus
             
-            if progress > 0:
-                shaped_reward += self.progress_reward * progress
-            else:
-                shaped_reward -= self.progress_reward * abs(progress) * 0.5
-            
+            elif they_scored:
+                shaped_reward[5:] += self.goal_bonus
+
+            shaped_reward = sum(shaped_reward)
+
+        else:
+            if reward > 0:
+                shaped_reward += self.goal_bonus
+
+            if self.reward_type == "angle":
+                ball_out, is_opponent_ball = self.check_ball_status(obs)
+
+                if ball_out and not is_opponent_ball:
+                    print("Bola saiu, punição aplicada.")
+                    shaped_reward -= 0.2
+
+            elif self.reward_type == "checkpoint":
+                progress = self.checkpoint_reward(obs)
+                
+                if progress > 0:
+                    shaped_reward += self.progress_reward * progress
+                else:
+                    shaped_reward -= self.progress_reward * abs(progress) * 0.5
+
+            elif self.reward_type == "counterattack":
+                progress = self.checkpoint_reward(obs)
+                they_scored = self.goal_rewards(obs)
+                
+                if progress > 0:
+                    shaped_reward += self.progress_reward * progress
+                else:
+                    shaped_reward -= self.progress_reward * abs(progress) * 0.5
+
+                if they_scored:
+                    shaped_reward -= self.goal_bonus
+
+            elif self.reward_type == "advanced":
+                they_scored, we_scored = self.goal_rewards(obs)
+
+                if they_scored:
+                    shaped_reward -= self.goal_bonus
+                
 
         return obs, shaped_reward, done, info
