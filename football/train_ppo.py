@@ -34,8 +34,8 @@ STAGES = {
     1: {
         "scenario": "academy_empty_goal",
         "timesteps": 1_000_000,
-        "reward": "checkpoint",
-        "adversary": "angle",
+        "reward": "angle",
+        "adversary": "default",
         "initial_diff" : 0.01
     },
     2: {
@@ -54,7 +54,7 @@ STAGES = {
     },
     4: {
         "scenario": "5_vs_5",
-        "timesteps": 1_000_000,
+        "timesteps": 2_000_000,
         "reward": "advanced",
         "adversary": "custom",
         "initial_diff" : 0.1
@@ -164,7 +164,7 @@ def setup_env(config, scenario_name):
             render=False, 
             write_goal_dumps=False,
             write_full_episode_dumps=False,
-            write_video=False,
+            write_video=True,
             number_of_left_players_agent_controls=5,
             number_of_right_players_agent_controls=5
         )
@@ -179,7 +179,7 @@ def setup_env(config, scenario_name):
             render=False, 
             write_goal_dumps=False,
             write_full_episode_dumps=False,
-            write_video=False,
+            write_video=True,
             number_of_left_players_agent_controls=5,
             other_config_options={'difficulty': config["initial_diff"]}
         )
@@ -196,7 +196,7 @@ def setup_env(config, scenario_name):
             other_config_options={'difficulty': config["initial_diff"]}
         )
 
-        env = ActionCurriculumWrapper(env)
+        #env = ActionCurriculumWrapper(env)
 
 
     if config["reward"] == "none":
@@ -228,11 +228,11 @@ def setup_model(STAGE, load_path, env):
         tensorboard_log="./logs_gfootball/",
         learning_rate=linear_lr_decay(3e-4),
         n_steps=2048,
-        gamma=0.993,
-        gae_lambda=0.95,
-        ent_coef=0.00155,
         batch_size=128,
         clip_range=0.115,
+        gamma=0.99,
+        gae_lambda=0.95,
+        ent_coef=0.01,
         max_grad_norm=0.76,
         vf_coef=0.5,
         device="cpu",
