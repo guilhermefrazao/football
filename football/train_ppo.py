@@ -253,7 +253,7 @@ def run_agent():
 
     prev_stage = STAGE - 1
 
-    load_path = f"./models/exp{prev_stage}_{STAGES[prev_stage]['scenario']}_model.zip" if STAGE > 1 else None
+    load_path = f"./models/exp_{prev_stage}_{STAGES[prev_stage]['scenario']}_model.zip" if STAGE > 1 else None
 
     model = setup_model(STAGE, load_path, env)
 
@@ -268,7 +268,7 @@ def run_agent():
         callback=callback
     )
 
-    model_path = f"models/exp{STAGE}_{scenario_name}_model"
+    model_path = f"models/exp_{STAGE}_{scenario_name}_model"
     os.makedirs(os.path.dirname(model_path), exist_ok=True)
 
     model.save(model_path)
