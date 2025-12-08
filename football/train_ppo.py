@@ -1,5 +1,6 @@
 import gfootball.env as football_env
 import os
+from gfootball.env import players
 import gym
 import wandb
 import argparse
@@ -21,40 +22,41 @@ parser.add_argument('--stage', type=int, required=True, help='Nome do modelo a s
 
 args = parser.parse_args()
 
+
+
 STAGES = {
     1: {
-        "scenario": "academy_empty_goal",
+        "scenario": "1_vs_1_easy",
         "timesteps": 1_000_000,
         "reward": "light",
         "adversary": "default"
     },
     2: {
         "scenario": "academy_pass_and_shoot_with_keeper",
-        "timesteps": 2_000_000,
+        "timesteps": 1_000_000,
         "reward": "light",
         "adversary": "default"
     },
     3: {
-        "scenario": "academy_counterattack_easy",
-        "timesteps": 2_000_000,
+        "scenario": "academy_3_vs_1_with_keeper",
+        "timesteps": 1_000_000,
         "reward": "medium",
         "adversary": "default"
     },
     4: {
         "scenario": "academy_counterattack_hard",
-        "timesteps": 2_000_000,
+        "timesteps": 1_000_000,
         "reward": "advanced",
         "adversary": "custom"
     },
     5: {
         "scenario": "5_vs_5",
-        "timesteps": 2_000_000,
+        "timesteps": 1_000_000,
         "reward": "advanced",
         "adversary": "self_play"
     }
 
 }
-
 
 
 class FootballMetricsCallback(BaseCallback):
@@ -98,7 +100,7 @@ def setup_wandb(scenario_name, STAGE, total_timesteps):
     run = wandb.init(
     project="RL_Fut_PPO",
     entity="guilhermefrazao-ufg", 
-    name=f"train_{STAGE}_{scenario_name}_-{datetime.now().strftime('%d - %H:%M')}",
+    name=f"train_{STAGE}_{scenario_name}_-{datetime.now().strftime('%d - %H:%M')}_3050",
     sync_tensorboard=True,   
     save_code=True,  
     config={
@@ -130,15 +132,35 @@ def setup_wandb(scenario_name, STAGE, total_timesteps):
 
 
 def setup_env(config, scenario_name):
-    env = football_env.create_environment(
-        env_name=scenario_name, 
-        stacked=True, 
-        representation='simple115v2',
-        render=False, 
-        write_goal_dumps=False,
-        write_full_episode_dumps=False,
-        write_video=False
-    )
+    if config["adversary"] == "custom":
+        players=[
+            'agent:left_players=5',
+            'agent:right_players=5'
+                ]
+
+        env = football_env.create_environment(
+            env_name=scenario_name, 
+            stacked=True, 
+            representation='simple115v2',
+            render=False, 
+            write_goal_dumps=False,
+            write_full_episode_dumps=False,
+            write_video=False,
+            players=players
+        )
+
+        agent_module.Player = CustomPlayer
+
+    else:
+        env = football_env.create_environment(
+            env_name=scenario_name, 
+            stacked=True, 
+            representation='simple115v2',
+            render=False, 
+            write_goal_dumps=False,
+            write_full_episode_dumps=False,
+            write_video=False
+        )
 
 
     if config["reward"] == "none":
@@ -149,10 +171,6 @@ def setup_env(config, scenario_name):
         env = FootballShapedReward(env, step_penalty=1e-4, goal_bonus=0.5, progress_reward=0.05, reward_type=config["reward"])
     elif config["reward"] == "advanced":
         env = FootballShapedReward(env, step_penalty=5e-5, goal_bonus=1.0, progress_reward=0.05, reward_type=config["reward"])
-
-
-    if config["adversary"] == "custom":
-        agent_module.Player = CustomPlayer
 
     return env
 
@@ -206,7 +224,7 @@ def run_agent():
 
     prev_stage = STAGE - 1
 
-    load_path = f"./models/exp{prev_stage}_{STAGES[prev_stage]["scenario"]}model.zip"
+    load_path = f"./models/exp{prev_stage}_{STAGES[prev_stage]['scenario']}_model.zip" if STAGE > 1 else None
 
     model = setup_model(STAGE, load_path, env)
 

@@ -76,7 +76,7 @@ print(f"--> Carregando agente: {model_path} no cenário {scenario_name}")
 wandb.init(
     project="RL_Fut_PPO", 
     entity="guilhermefrazao-ufg", 
-    name=f"evaluation_{scenario_name}_{datetime.now().strftime('%d - %H:%M')}",
+    name=f"eval_{scenario_name}_{datetime.now().strftime('%d - %H:%M')}",
     config={
         "scenario": scenario_name,
         "model": model_path,
