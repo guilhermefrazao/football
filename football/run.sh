@@ -20,10 +20,11 @@ do
 
     MODEL_PATH="models/exp${STAGE}_model.zip"
 
-    SCENARIOS=("1_vs_1_easy" \
+    SCENARIOS=("academy_run_to_score_with_keeper" \
            "academy_pass_and_shoot_with_keeper" \
-           "academy_3_vs_1_with_keeper" \
+           "academy_counterattack_easy" \
            "academy_counterattack_hard" \
+           "5_vs_5" \
            "5_vs_5")
 
     SCENARIO=${SCENARIOS[$((STAGE-1))]}

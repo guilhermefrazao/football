@@ -27,7 +27,7 @@ args = parser.parse_args()
 
 STAGES = {
     1: {
-        "scenario": "academy_empty_goal_close",
+        "scenario": "academy_run_to_score_with_keeper",
         "timesteps": 1_000_000,
         "reward": "checkpoint",
         "adversary": "default",
@@ -41,9 +41,9 @@ STAGES = {
         "initial_diff" : 0.05
     },
     3: {
-        "scenario": "academy_3_vs_1_with_keeper",
+        "scenario": "academy_counterattack_easy",
         "timesteps": 1_000_000,
-        "reward": "angle",
+        "reward": "counterattack",
         "adversary": "default",
         "initial_diff" : 0.1
     },
