@@ -18,15 +18,15 @@ do
     # 2) Avaliação
     echo "🎥 VISUALIZANDO ESTÁGIO $STAGE"
 
-    MODEL_PATH="models/exp${STAGE}_model.zip"
-
-    SCENARIOS=("academy_run_to_score_with_keeper" \
+    SCENARIOS=("academy_empty_goal" \
            "academy_pass_and_shoot_with_keeper" \
            "academy_counterattack_easy" \
            "5_vs_5" \
            "5_vs_5")
 
     SCENARIO=${SCENARIOS[$((STAGE-1))]}
+
+    MODEL_PATH="models/exp_${STAGE}_${SCENARIO}_model.zip"
 
     python3 watch_agent.py --model_name $MODEL_PATH --scenario $SCENARIO
 

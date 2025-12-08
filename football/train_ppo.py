@@ -1,9 +1,13 @@
 import gfootball.env as football_env
 import os
 from gfootball.env import players
+from gfootball.env.football_action_set import action_bottom
 import gym
 from numpy import diff
 import wandb
+import torch 
+import zipfile
+import io
 import argparse
 
 from wandb.integration.sb3 import WandbCallback
@@ -15,6 +19,7 @@ from datetime import datetime
 import gfootball.env.players.agent as agent_module
 from custom_agent import Player as CustomPlayer
 from custom_reward import FootballShapedReward
+from action_wrapper import ActionCurriculumCallback, ActionCurriculumWrapper
 
 
 parser = argparse.ArgumentParser(description='Visualiza um agente treinado.')
@@ -27,32 +32,32 @@ args = parser.parse_args()
 
 STAGES = {
     1: {
-        "scenario": "academy_run_to_score_with_keeper",
+        "scenario": "academy_empty_goal",
         "timesteps": 1_000_000,
         "reward": "checkpoint",
-        "adversary": "default",
+        "adversary": "angle",
         "initial_diff" : 0.01
     },
     2: {
         "scenario": "academy_pass_and_shoot_with_keeper",
-        "timesteps": 1_000_000,
+        "timesteps": 2_000_000,
         "reward": "angle",
         "adversary": "default",
         "initial_diff" : 0.05
     },
     3: {
         "scenario": "academy_counterattack_easy",
-        "timesteps": 1_000_000,
+        "timesteps": 2_000_000,
         "reward": "counterattack",
         "adversary": "default",
-        "initial_diff" : 0.1
+        "initial_diff" : 0.01
     },
     4: {
         "scenario": "5_vs_5",
         "timesteps": 1_000_000,
         "reward": "advanced",
         "adversary": "custom",
-        "initial_diff" : 0.4
+        "initial_diff" : 0.1
     },
     5: {
         "scenario": "5_vs_5",
@@ -104,7 +109,6 @@ class FootballMetricsCallback(BaseCallback):
                 print(f"\n--- Alterando Dificuldade ---")
                 print(f"Total timesteps: {self.num_timesteps}")
                 print(f"Nova Dificuldade (θ): {self.current_diff:.3f}")
-
                 if self.current_diff >= 1.0:
                     self.current_diff = 1.0
 
@@ -116,12 +120,11 @@ class FootballMetricsCallback(BaseCallback):
         return True
 
 
-
 def setup_wandb(scenario_name, STAGE, total_timesteps):
     run = wandb.init(
     project="RL_Fut_PPO",
     entity="guilhermefrazao-ufg", 
-    name=f"train_{STAGE}_{scenario_name}_-{datetime.now().strftime('%d - %H:%M')}",
+    name=f"train_{STAGE}_{scenario_name}_-{datetime.now().strftime('%d - %H:%M')}_3050_bs-1",
     sync_tensorboard=True,   
     save_code=True,  
     config={
@@ -151,8 +154,8 @@ def setup_wandb(scenario_name, STAGE, total_timesteps):
     return new_logger, wandb_callback
 
 
-
 def setup_env(config, scenario_name):
+    print(f"difficulty = {config['initial_diff']}")
     if config["adversary"] == "self_play":
         env = football_env.create_environment(
             env_name=scenario_name, 
@@ -168,8 +171,20 @@ def setup_env(config, scenario_name):
 
         agent_module.Player = CustomPlayer
 
+    elif config["adversary"] == "custom":
+        env = football_env.create_environment(
+            env_name=scenario_name, 
+            stacked=True, 
+            representation='simple115v2',
+            render=False, 
+            write_goal_dumps=False,
+            write_full_episode_dumps=False,
+            write_video=False,
+            number_of_left_players_agent_controls=5,
+            other_config_options={'difficulty': config["initial_diff"]}
+        )
+
     else:
-        print(f"difficulty = {config['initial_diff']}")
         env = football_env.create_environment(
             env_name=scenario_name, 
             stacked=True, 
@@ -181,6 +196,8 @@ def setup_env(config, scenario_name):
             other_config_options={'difficulty': config["initial_diff"]}
         )
 
+        env = ActionCurriculumWrapper(env)
+
 
     if config["reward"] == "none":
         pass
@@ -189,7 +206,7 @@ def setup_env(config, scenario_name):
     elif config["reward"] == "checkpoint":
         env = FootballShapedReward(env, step_penalty=1e-4, goal_bonus=1.0, progress_reward=0.1, reward_type=config["reward"], adversary_type=config["adversary"])
     elif config["reward"] == "counterattack":
-        env = FootballShapedReward(env, step_penalty=3e-4, goal_bonus=1.0, progress_reward=0.2, reward_type=config["reward"], adversary_type=config["adversary"])
+        env = FootballShapedReward(env, step_penalty=1e-4, goal_bonus=0.5, progress_reward=0.05, reward_type=config["reward"], adversary_type=config["adversary"])
     elif config["reward"] == "advanced":
         env = FootballShapedReward(env, step_penalty=5e-5, goal_bonus=0.5, progress_reward=0.05, reward_type=config["reward"], adversary_type=config["adversary"])
 
@@ -204,26 +221,40 @@ def linear_lr_decay(initial_lr):
 
 
 def setup_model(STAGE, load_path, env):
+    model = PPO(
+        "MlpPolicy", 
+        env, 
+        verbose=1, 
+        tensorboard_log="./logs_gfootball/",
+        learning_rate=linear_lr_decay(3e-4),
+        n_steps=2048,
+        gamma=0.993,
+        gae_lambda=0.95,
+        ent_coef=0.00155,
+        batch_size=128,
+        clip_range=0.115,
+        max_grad_norm=0.76,
+        vf_coef=0.5,
+        device="cpu",
+    )    
+
     if STAGE > 1 and os.path.exists(load_path):
         print(f"🔁 Carregando pesos do estágio anterior: {load_path}")
-        model = PPO.load(load_path, env=env, device="cpu")
-    else:    
-        model = PPO(
-            "MlpPolicy", 
-            env, 
-            verbose=1, 
-            tensorboard_log="./logs_gfootball/",
-            learning_rate=linear_lr_decay(3e-4),
-            n_steps=2048,
-            gamma=0.993,
-            gae_lambda=0.95,
-            ent_coef=0.00155,
-            batch_size=128,
-            clip_range=0.115,
-            max_grad_norm=0.76,
-            vf_coef=0.5,
-            device="cpu",
-        )    
+
+        old_model = PPO.load(load_path, device="cpu")
+
+        old_sd = old_model.policy.state_dict()
+        new_sd = model.policy.state_dict()
+
+        for k in new_sd.keys():
+            if k in old_sd and old_sd[k].shape == new_sd[k].shape:
+                new_sd[k] = old_sd[k]
+            else:
+                print(f"Ignorando camada incompatível: {k}")
+
+        model.policy.load_state_dict(new_sd)
+
+        print("Pesos transferidos com sucesso! Iniciando treinamento...")
 
     return model
 
@@ -238,7 +269,7 @@ def run_agent():
 
     total_timesteps = config["timesteps"]
 
-    print(f"--> Configuração Python: Cenário={scenario_name}")
+    print(f"--> Configuração Python: Cenário = {scenario_name}")
 
     new_logger, wandb_callback = setup_wandb(scenario_name, STAGE, total_timesteps)
 
@@ -246,13 +277,15 @@ def run_agent():
 
     prev_stage = STAGE - 1
 
-    load_path = f"./models/exp_{prev_stage}_{STAGES[prev_stage]['scenario']}_model.zip" if STAGE > 1 else None
+    #load_path = f"./models/exp_{prev_stage}_{STAGES[prev_stage]['scenario']}_model.zip" if STAGE > 1 else None
+
+    load_path = "./models/exp_2_academy_pass_and_shoot_with_keeper_model.zip"
 
     model = setup_model(STAGE, load_path, env)
 
     model.set_logger(new_logger)
 
-    callback = CallbackList([wandb_callback, FootballMetricsCallback(initial_diff=config["initial_diff"])])
+    callback = CallbackList([wandb_callback, FootballMetricsCallback(initial_diff=config["initial_diff"]), ActionCurriculumCallback(activation_timestep=10000)])
 
     print(f"Iniciando treinamento no cenário: {scenario_name}...")
 

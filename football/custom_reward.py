@@ -50,7 +50,7 @@ class FootballShapedReward(gym.Wrapper):
 
 
     def goal_rewards(self, obs):
-        if self.adversary == "self_play":
+        if self.adversary == "self_play" or self.adversary == "custom":
             ball_x = obs[0][88]
             ball_y = obs[0][89]
 
@@ -76,14 +76,15 @@ class FootballShapedReward(gym.Wrapper):
         obs, reward, done, info = self.env.step(action)
         shaped_reward = reward - self.step_penalty
 
-        if self.adversary == "self_play":
+        if self.adversary == "self_play" or self.adversary == "custom":
             they_scored, we_scored = self.goal_rewards(obs)
+            shaped_divide = len(shaped_reward / 2)
 
             if we_scored:
-                shaped_reward[:5] += self.goal_bonus
+                shaped_reward[:shaped_divide] += self.goal_bonus
             
             elif they_scored:
-                shaped_reward[5:] += self.goal_bonus
+                shaped_reward[shaped_divide:] += self.goal_bonus
 
             shaped_reward = sum(shaped_reward)
 
@@ -106,23 +107,5 @@ class FootballShapedReward(gym.Wrapper):
                 else:
                     shaped_reward -= self.progress_reward * abs(progress) * 0.5
 
-            elif self.reward_type == "counterattack":
-                progress = self.checkpoint_reward(obs)
-                they_scored = self.goal_rewards(obs)
                 
-                if progress > 0:
-                    shaped_reward += self.progress_reward * progress
-                else:
-                    shaped_reward -= self.progress_reward * abs(progress) * 0.5
-
-                if they_scored:
-                    shaped_reward -= self.goal_bonus
-
-            elif self.reward_type == "advanced":
-                they_scored, we_scored = self.goal_rewards(obs)
-
-                if they_scored:
-                    shaped_reward -= self.goal_bonus
-                
-
         return obs, shaped_reward, done, info
