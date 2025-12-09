@@ -207,7 +207,7 @@ def setup_env(config, scenario_name):
                 other_config_options={'difficulty': config["initial_diff"]}
             )
 
-            #env = ActionCurriculumWrapper(env)
+        env = ActionCurriculumWrapper(env)
 
         if config["reward"] == "none":
             pass
