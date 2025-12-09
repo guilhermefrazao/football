@@ -4,7 +4,7 @@ set -e
 
 echo "🔥 INICIANDO PIPELINE COMPLETO"
 
-STAGES=(1 2 3 4 5)
+STAGES=(1 2 3 4 5 6)
 
 
 for STAGE in "${STAGES[@]}"
@@ -21,6 +21,7 @@ do
     SCENARIOS=("academy_empty_goal" \
            "academy_pass_and_shoot_with_keeper" \
            "academy_counterattack_easy" \
+           "academy_counterattack_hard" \
            "5_vs_5" \
            "5_vs_5")
 

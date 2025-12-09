@@ -90,9 +90,8 @@ env = football_env.create_environment(
     stacked=True, 
     representation='simple115v2',
     render=True, 
-    write_video=False
+    write_video=True
 )
-
 
 model = PPO.load(model_path)
 

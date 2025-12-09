@@ -35,6 +35,9 @@ class FootballShapedReward(gym.Wrapper):
 
         return is_physically_out, is_opponent_ball 
 
+    def set_difficulty(self, diff):
+        self.env.unwrapped._config["difficulty"] = diff
+
     
     def checkpoint_reward(self, obs):
         ball_x = obs[88]
@@ -78,7 +81,7 @@ class FootballShapedReward(gym.Wrapper):
 
         if self.adversary == "self_play" or self.adversary == "custom":
             they_scored, we_scored = self.goal_rewards(obs)
-            shaped_divide = len(shaped_reward / 2)
+            shaped_divide = len(shaped_reward) // 2
 
             if we_scored:
                 shaped_reward[:shaped_divide] += self.goal_bonus
@@ -86,7 +89,7 @@ class FootballShapedReward(gym.Wrapper):
             elif they_scored:
                 shaped_reward[shaped_divide:] += self.goal_bonus
 
-            shaped_reward = sum(shaped_reward)
+            shaped_reward = float(np.sum(shaped_reward))
 
         else:
             if reward > 0:

@@ -14,12 +14,14 @@ from wandb.integration.sb3 import WandbCallback
 from stable_baselines3 import PPO
 from stable_baselines3.common.logger import configure
 from stable_baselines3.common.callbacks import CallbackList, BaseCallback
+from stable_baselines3.common.vec_env import SubprocVecEnv
 from datetime import datetime
 
 import gfootball.env.players.agent as agent_module
 from custom_agent import Player as CustomPlayer
 from custom_reward import FootballShapedReward
 from action_wrapper import ActionCurriculumCallback, ActionCurriculumWrapper
+
 
 
 parser = argparse.ArgumentParser(description='Visualiza um agente treinado.')
@@ -53,15 +55,22 @@ STAGES = {
         "initial_diff" : 0.01
     },
     4: {
+        "scenario": "academy_counterattack_hard",
+        "timesteps": 2_000_000,
+        "reward": "advanced",
+        "adversary": "default",
+        "initial_diff" : 0.1
+    },
+    5: {
         "scenario": "5_vs_5",
         "timesteps": 2_000_000,
         "reward": "advanced",
         "adversary": "custom",
         "initial_diff" : 0.1
     },
-    5: {
+    6: {
         "scenario": "5_vs_5",
-        "timesteps": 1_000_000,
+        "timesteps": 2_000_000,
         "reward": "advanced",
         "adversary": "self_play",
         "initial_diff" : 0.3
@@ -79,43 +88,43 @@ class FootballMetricsCallback(BaseCallback):
         self.current_diff = initial_diff
 
     def _on_step(self):
-        reward = self.locals["rewards"][0]
-        done = self.locals["dones"][0]
-        info = self.locals["infos"][0]
+        dones = self.locals["dones"]
+        infos = self.locals["infos"]
 
-        if done:
-            ep = info["episode"]
-            truncated = info.get("TimeLimit.truncated", False)
-            score_reward = info.get("score_reward", 0)
+        for i, done in enumerate(dones):
+            if done and "episode" in infos[i]:
+                ep = infos[i]["episode"]
+                truncated = infos[i].get("TimeLimit.truncated", False)
+                score_reward = infos[i].get("score_reward", 0)
 
-            self.logger.record("custom/episode_reward", ep["r"])
-            self.logger.record("custom/episode_length", ep["l"])
+                self.logger.record("custom/episode_reward", ep["r"])
+                self.logger.record("custom/episode_length", ep["l"])
 
-            success = 1 if (score_reward > 0 and not truncated) else 0 # Change score_reward according to stage
+                success = 1 if (score_reward > 0 and not truncated) else 0 # Change score_reward according to stage
 
-            self.recent_success.append(success)
+                self.recent_success.append(success)
 
-            if len(self.recent_success) > self.window_size:
-                self.recent_success.pop(0)
+                if len(self.recent_success) > self.window_size:
+                    self.recent_success.pop(0)
 
-            success_rate = sum(self.recent_success) / len(self.recent_success)
-            efficiency = success / ep["l"]
+                success_rate = sum(self.recent_success) / len(self.recent_success)
+                efficiency = success / ep["l"]
 
-            self.logger.record("custom/success_rate", success_rate)
-            self.logger.record("custom/success_last_ep", success)
-            self.logger.record("custom/efficiency", efficiency)
+                self.logger.record("custom/success_rate", success_rate)
+                self.logger.record("custom/success_last_ep", success)
+                self.logger.record("custom/efficiency", efficiency)
 
-            if success_rate >= 0.80 and self.current_diff < 1.0:
-                print(f"\n--- Alterando Dificuldade ---")
-                print(f"Total timesteps: {self.num_timesteps}")
-                print(f"Nova Dificuldade (θ): {self.current_diff:.3f}")
-                if self.current_diff >= 1.0:
-                    self.current_diff = 1.0
+                if success_rate >= 0.80 and self.current_diff < 1.0:
+                    print(f"\n--- Alterando Dificuldade ---")
+                    print(f"Total timesteps: {self.num_timesteps}")
+                    print(f"Nova Dificuldade (θ): {self.current_diff:.3f}")
+                    if self.current_diff >= 1.0:
+                        self.current_diff = 1.0
 
-                else:
-                    self.current_diff = self.current_diff + 0.1
-                
-                self.model.env.set_attr('other_config_options', [{'difficulty': self.current_diff}])
+                    else:
+                        self.current_diff = self.current_diff + 0.1
+                    
+                    self.model.env.env_method("set_difficulty", self.current_diff)
 
         return True
 
@@ -124,7 +133,7 @@ def setup_wandb(scenario_name, STAGE, total_timesteps):
     run = wandb.init(
     project="RL_Fut_PPO",
     entity="guilhermefrazao-ufg", 
-    name=f"train_{STAGE}_{scenario_name}_-{datetime.now().strftime('%d - %H:%M')}_3050_bs-1",
+    name=f"train_{STAGE}_{scenario_name}_-{datetime.now().strftime('%d - %H:%M')}_4090_bs-2",
     sync_tensorboard=True,   
     save_code=True,  
     config={
@@ -149,68 +158,71 @@ def setup_wandb(scenario_name, STAGE, total_timesteps):
 
     log_path = f"./logs_gfootball/{run.id}"
     
-    new_logger = configure(log_path, ["stdout", "tensorboard"])
+    new_logger = configure(log_path, ["stdout", "tensorboard", "wandb"])
 
     return new_logger, wandb_callback
 
 
 def setup_env(config, scenario_name):
-    print(f"difficulty = {config['initial_diff']}")
-    if config["adversary"] == "self_play":
-        env = football_env.create_environment(
-            env_name=scenario_name, 
-            stacked=True, 
-            representation='simple115v2',
-            render=False, 
-            write_goal_dumps=False,
-            write_full_episode_dumps=False,
-            write_video=True,
-            number_of_left_players_agent_controls=5,
-            number_of_right_players_agent_controls=5
-        )
 
-        agent_module.Player = CustomPlayer
+    def _init_():
+        print(f"difficulty = {config['initial_diff']}")
+        if config["adversary"] == "self_play":
+            env = football_env.create_environment(
+                env_name=scenario_name, 
+                stacked=True, 
+                representation='simple115v2',
+                render=False, 
+                write_goal_dumps=False,
+                write_full_episode_dumps=False,
+                write_video=True,
+                number_of_left_players_agent_controls=5,
+                number_of_right_players_agent_controls=5
+            )
 
-    elif config["adversary"] == "custom":
-        env = football_env.create_environment(
-            env_name=scenario_name, 
-            stacked=True, 
-            representation='simple115v2',
-            render=False, 
-            write_goal_dumps=False,
-            write_full_episode_dumps=False,
-            write_video=True,
-            number_of_left_players_agent_controls=5,
-            other_config_options={'difficulty': config["initial_diff"]}
-        )
+            agent_module.Player = CustomPlayer
 
-    else:
-        env = football_env.create_environment(
-            env_name=scenario_name, 
-            stacked=True, 
-            representation='simple115v2',
-            render=False, 
-            write_goal_dumps=False,
-            write_full_episode_dumps=False,
-            write_video=False,
-            other_config_options={'difficulty': config["initial_diff"]}
-        )
+        elif config["adversary"] == "custom":
+            env = football_env.create_environment(
+                env_name=scenario_name, 
+                stacked=True, 
+                representation='simple115v2',
+                render=False, 
+                write_goal_dumps=False,
+                write_full_episode_dumps=False,
+                write_video=True,
+                number_of_left_players_agent_controls=5,
+                other_config_options={'difficulty': config["initial_diff"]}
+            )
 
-        #env = ActionCurriculumWrapper(env)
+        else:
+            env = football_env.create_environment(
+                env_name=scenario_name, 
+                stacked=True, 
+                representation='simple115v2',
+                render=False, 
+                write_goal_dumps=False,
+                write_full_episode_dumps=False,
+                write_video=False,
+                other_config_options={'difficulty': config["initial_diff"]}
+            )
 
+            #env = ActionCurriculumWrapper(env)
 
-    if config["reward"] == "none":
-        pass
-    elif config["reward"] == "angle":
-        env = FootballShapedReward(env, step_penalty=1e-4, reward_type=config["reward"], adversary_type=config["adversary"])
-    elif config["reward"] == "checkpoint":
-        env = FootballShapedReward(env, step_penalty=1e-4, goal_bonus=1.0, progress_reward=0.1, reward_type=config["reward"], adversary_type=config["adversary"])
-    elif config["reward"] == "counterattack":
-        env = FootballShapedReward(env, step_penalty=1e-4, goal_bonus=0.5, progress_reward=0.05, reward_type=config["reward"], adversary_type=config["adversary"])
-    elif config["reward"] == "advanced":
-        env = FootballShapedReward(env, step_penalty=5e-5, goal_bonus=0.5, progress_reward=0.05, reward_type=config["reward"], adversary_type=config["adversary"])
-
-    return env
+        if config["reward"] == "none":
+            pass
+        elif config["reward"] == "angle":
+            env = FootballShapedReward(env, step_penalty=1e-4, reward_type=config["reward"], adversary_type=config["adversary"])
+        elif config["reward"] == "checkpoint":
+            env = FootballShapedReward(env, step_penalty=1e-4, goal_bonus=1.0, progress_reward=0.1, reward_type=config["reward"], adversary_type=config["adversary"])
+        elif config["reward"] == "counterattack":
+            env = FootballShapedReward(env, step_penalty=1e-4, goal_bonus=0.5, progress_reward=0.05, reward_type=config["reward"], adversary_type=config["adversary"])
+        elif config["reward"] == "advanced":
+            env = FootballShapedReward(env, step_penalty=5e-5, goal_bonus=0.5, progress_reward=0.05, reward_type=config["reward"], adversary_type=config["adversary"])
+        
+        return env
+    
+    return _init_
 
 
 def linear_lr_decay(initial_lr):
@@ -273,17 +285,21 @@ def run_agent():
 
     new_logger, wandb_callback = setup_wandb(scenario_name, STAGE, total_timesteps)
 
-    env = setup_env(config, scenario_name)
+    env = SubprocVecEnv([setup_env(config, scenario_name) for _ in range(32)])
+
+    print("Dividindo o ambiente em 32 execuções simultâneas")
 
     prev_stage = STAGE - 1
 
-    load_path = f"./models/exp_{prev_stage}_{STAGES[prev_stage]['scenario']}_model.zip" if STAGE > 1 else None
+    #load_path = f"./models/models/exp_{prev_stage}_{STAGES[prev_stage]['scenario']}_model.zip" if STAGE > 1 else None
+
+    load_path = "./models/models/exp_5_5_vs_5_model.zip"
 
     model = setup_model(STAGE, load_path, env)
 
-    model.set_logger(new_logger)
+    model.logger = new_logger
 
-    callback = CallbackList([wandb_callback, FootballMetricsCallback(initial_diff=config["initial_diff"]), ActionCurriculumCallback(activation_timestep=10000)])
+    callback = CallbackList([wandb_callback, FootballMetricsCallback(initial_diff=config["initial_diff"])])
 
     print(f"Iniciando treinamento no cenário: {scenario_name}...")
 
