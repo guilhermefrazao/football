@@ -158,7 +158,7 @@ def setup_wandb(scenario_name, STAGE, total_timesteps):
 
     log_path = f"./logs_gfootball/{run.id}"
     
-    new_logger = configure(log_path, ["stdout", "tensorboard", "wandb"])
+    new_logger = configure(log_path, ["stdout", "tensorboard"])
 
     return new_logger, wandb_callback
 
@@ -297,7 +297,7 @@ def run_agent():
 
     model = setup_model(STAGE, load_path, env)
 
-    model.logger = new_logger
+    model.set_logger(new_logger)
 
     callback = CallbackList([wandb_callback, FootballMetricsCallback(initial_diff=config["initial_diff"])])
 

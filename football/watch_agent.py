@@ -84,14 +84,27 @@ wandb.init(
     }
 )
 
+if scenario_name == "5_vs_5":
+    env = football_env.create_environment(
+                env_name=scenario_name, 
+                stacked=True, 
+                representation='simple115v2',
+                render=False, 
+                write_goal_dumps=False,
+                write_full_episode_dumps=False,
+                write_video=True,
+                number_of_left_players_agent_controls=5,
+                number_of_right_players_agent_controls=5
+            )
 
-env = football_env.create_environment(
-    env_name=scenario_name, 
-    stacked=True, 
-    representation='simple115v2',
-    render=True, 
-    write_video=True
-)
+else:
+    env = football_env.create_environment(
+        env_name=scenario_name, 
+        stacked=True, 
+        representation='simple115v2',
+        render=True, 
+        write_video=True
+    )
 
 model = PPO.load(model_path)
 
